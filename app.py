@@ -121,20 +121,22 @@ with col1:
             df_input = fetch_and_prepare_data()
             
             # ==========================================
-            # 🚨 RADAR DEBUGGER (CARI KOLOM HILANG)
+            # 🧹 VACUUM CLEANER (PEMBERSIH NaN & INF)
             # ==========================================
-            # Kita bongkar memori model buat ngecek dia butuh kolom apa aja
-            expected_cols = model.dataset_parameters["time_varying_unknown_reals"] + \
-                            model.dataset_parameters["time_varying_known_reals"] + \
-                            model.dataset_parameters["group_ids"] + \
-                            [model.dataset_parameters["target"]]
-                            
-            # Cocokin sama kolom yang kita punya sekarang
-            missing_cols = [col for col in expected_cols if col not in df_input.columns]
+            # Pastikan kolom numerik benar-benar angka, ubah tipe aneh jadi NaN
+            for col in df_input.columns:
+                if col not in ['Date', 'group']: # Abaikan kolom tanggal dan teks
+                    df_input[col] = pd.to_numeric(df_input[col], errors='coerce')
             
-            if len(missing_cols) > 0:
-                st.error(f"🚨 KETAHUAN! Model lu nyari kolom ini, tapi GAK ADA di data Streamlit: {missing_cols}")
-                st.stop() # Hentikan proses biar gak crash merah kayak sebelumnya
+            # Basmi angka Infinity (Tak terhingga) jadi NaN
+            df_input = df_input.replace([np.inf, -np.inf], np.nan)
+            
+            # Cek apakah ada kolom yang bocor/kosong
+            if df_input.isna().sum().sum() > 0:
+                st.warning("⚠️ Yahoo Finance gagal menarik beberapa data bursa hari ini. Sistem otomatis melakukan penambalan data...")
+                
+            # Tambal paksa! Isi dengan angka sebelumnya (ffill), atasnya (bfill), atau 0 kalau mentok
+            df_input = df_input.ffill().bfill().fillna(0)
             # ==========================================
             
             # 2. Jalankan Prediksi Pakai Model AI
@@ -144,7 +146,7 @@ with col1:
             tebakan = future_preds.output.numpy()[0, :, 3]
             tanggal_depan = pd.date_range(start=pd.Timestamp.today(), periods=7).date
             
-            # 4. Simpan ke Session State
+            # 4. Simpan ke Session State biar gak hilang pas refresh
             st.session_state['pred_ready'] = True
             st.session_state['tebakan'] = tebakan
             st.session_state['tanggal_depan'] = tanggal_depan
