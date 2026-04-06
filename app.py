@@ -139,11 +139,11 @@ with col1:
             df_input = df_input.ffill().bfill().fillna(0)
             # ==========================================
             
-            # 2. Jalankan Prediksi Pakai Model AI
-            future_preds = model.predict(df_input, mode="raw", return_x=True)
-            
-            # 3. Ekstrak Hasil
-            tebakan = future_preds.output.numpy()[0, :, 3]
+            ## 2. Jalankan Prediksi Pakai Model AI (Default Mode)
+            future_preds = model.predict(df_input)
+    
+            # 3. Ekstrak Hasil (Langsung ubah ke deretan angka biasa)
+            tebakan = np.array(future_preds).flatten()
             tanggal_depan = pd.date_range(start=pd.Timestamp.today(), periods=7).date
             
             # 4. Simpan ke Session State biar gak hilang pas refresh
