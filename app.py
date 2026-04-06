@@ -120,6 +120,23 @@ with col1:
             # 1. Siapkan Data Input
             df_input = fetch_and_prepare_data()
             
+            # ==========================================
+            # 🚨 RADAR DEBUGGER (CARI KOLOM HILANG)
+            # ==========================================
+            # Kita bongkar memori model buat ngecek dia butuh kolom apa aja
+            expected_cols = model.dataset_parameters["time_varying_unknown_reals"] + \
+                            model.dataset_parameters["time_varying_known_reals"] + \
+                            model.dataset_parameters["group_ids"] + \
+                            [model.dataset_parameters["target"]]
+                            
+            # Cocokin sama kolom yang kita punya sekarang
+            missing_cols = [col for col in expected_cols if col not in df_input.columns]
+            
+            if len(missing_cols) > 0:
+                st.error(f"🚨 KETAHUAN! Model lu nyari kolom ini, tapi GAK ADA di data Streamlit: {missing_cols}")
+                st.stop() # Hentikan proses biar gak crash merah kayak sebelumnya
+            # ==========================================
+            
             # 2. Jalankan Prediksi Pakai Model AI
             future_preds = model.predict(df_input, mode="raw", return_x=True)
             
@@ -127,7 +144,7 @@ with col1:
             tebakan = future_preds.output.numpy()[0, :, 3]
             tanggal_depan = pd.date_range(start=pd.Timestamp.today(), periods=7).date
             
-            # 4. Simpan ke Session State biar gak hilang pas refresh
+            # 4. Simpan ke Session State
             st.session_state['pred_ready'] = True
             st.session_state['tebakan'] = tebakan
             st.session_state['tanggal_depan'] = tanggal_depan
