@@ -100,7 +100,11 @@ def fetch_and_prepare_data():
     df_final['Kuartal'] = df_final['Date'].dt.quarter
     df_final['Hari_Seminggu'] = df_final['Date'].dt.dayofweek
     df_final['time_idx'] = list(range(1, len(df_final) + 1))
-    df_final['group'] = 0 
+    df_final['group'] = "0"  # Coba pakai tanda kutip (string)
+# ATAU
+# df_final['group'] = "CPO" # Kalau waktu training lu pakainya kata "CPO"
+# ATAU
+# df_final['group'] = df_final['group'].astype(str)df_final['group'] = 0 
     
     return df_final
 # ==========================================
