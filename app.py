@@ -70,7 +70,7 @@ def fetch_and_prepare_data():
     # Hitung 30D Sum buat cuaca
     cuaca_cols = [col for col in df_weather.columns if 'Curah Hujan' in col]
     for col in cuaca_cols:
-        nama_kolom_baru = f"{col}_30D_sum" 
+        nama_kolom_baru = f"{col}_30D_Sum" 
         df_weather[nama_kolom_baru] = df_weather[col].rolling(window=30).sum()
         
     # C. Gabungkan Harga & Cuaca
