@@ -52,7 +52,7 @@ def fetch_and_prepare_data():
         df_finance = pd.merge(df_finance, df_list[i], on='Date', how='outer')
         
     df_finance.sort_values('Date', inplace=True)
-    df_finance.fillna(method='ffill', inplace=True)
+    df_finance.ffill(inplace=True)
     df_finance.dropna(inplace=True) 
     
     # B. Load Data Cuaca (Historical/Static)
@@ -68,7 +68,7 @@ def fetch_and_prepare_data():
         
     # C. Gabungkan Harga & Cuaca
     df_master = pd.merge(df_finance, df_weather, on='Date', how='left')
-    df_master.fillna(method='ffill', inplace=True) 
+    df_master.ffill(inplace=True) 
     
     # Ambil 30 baris terakhir buat ancang-ancang
     encoder_data = df_master.tail(30).copy()
