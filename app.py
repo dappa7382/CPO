@@ -52,11 +52,11 @@ def fetch_and_prepare_data():
         df_finance = pd.merge(df_finance, df_list[i], on='Date', how='outer')
         
     df_finance.sort_values('Date', inplace=True)
+    # --- FIX ERROR PANDAS DI SINI ---
     df_finance.ffill(inplace=True)
     df_finance.dropna(inplace=True) 
     
     # B. Load Data Cuaca (Historical/Static)
-    # Pastikan file ini namanya bener dan ada di repo lu
     df_weather = pd.read_csv("historical_weather_data.csv")
     df_weather['Date'] = pd.to_datetime(df_weather['Date'])
     
@@ -68,6 +68,7 @@ def fetch_and_prepare_data():
         
     # C. Gabungkan Harga & Cuaca
     df_master = pd.merge(df_finance, df_weather, on='Date', how='left')
+    # --- FIX ERROR PANDAS DI SINI ---
     df_master.ffill(inplace=True) 
     
     # Ambil 30 baris terakhir buat ancang-ancang
