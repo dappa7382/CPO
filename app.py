@@ -79,9 +79,32 @@ with col1:
 with col2:
     st.subheader("Price Prediction Analysis")
     if st.session_state.get('pred_ready'):
-        # Tampilkan Grafik Line Chart Harga Asli vs Prediksi
-        # Tampilkan Tabel Prediksi 7 Hari ke Depan
-        st.write("Visualisasi Chart di sini...")
+        
+        # --- HAPUS st.write LAMA LU, GANTI JADI INI ---
+        
+        # 1. Kita bikin dummy data prediksi dulu (Nanti ini diganti pakai hasil model asli lu)
+        tebakan = [4100, 4120, 4080, 4150, 4180, 4200, 4190]
+        tanggal_depan = pd.date_range(start=pd.Timestamp.today(), periods=7).date
+        df_hasil = pd.DataFrame({
+            "Tanggal": tanggal_depan,
+            "Prediksi Harga (MYR)": tebakan
+        })
+        
+        # 2. Bikin Highlight Angka Penting di atas grafik
+        col2_a, col2_b = st.columns(2)
+        with col2_a:
+            st.metric("Prediksi Besok", f"{tebakan[0]} MYR", delta="Tren Naik")
+        with col2_b:
+            st.metric("Puncak Tertinggi 7 Hari", f"{max(tebakan)} MYR")
+            
+        # 3. Tampilkan Grafik Garis (Line Chart)
+        st.markdown("### Tren Harga 7 Hari Kedepan")
+        st.line_chart(df_hasil.set_index("Tanggal"))
+        
+        # 4. Tampilkan Tabel Detailnya
+        st.markdown("### Rincian Angka Harian")
+        st.dataframe(df_hasil, use_container_width=True)
+
     else:
         st.info("Klik tombol 'Run Live Prediction' untuk memulai analisa.")
 
