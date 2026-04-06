@@ -35,15 +35,19 @@ def fetch_and_prepare_data():
     
     df_list = []
     for name, ticker in tickers.items():
-        # Tarik 60 hari ke belakang biar aman
-        df_temp = yf.download(ticker, period="60d")['Close'].reset_index()
-        # Handle multi-index dari yfinance versi terbaru
-        if isinstance(df_temp.columns, pd.MultiIndex):
-            df_temp.columns = df_temp.columns.get_level_values(0)
+        # CARA BARU YANG LEBIH TAHAN BANTING
+        ticker_obj = yf.Ticker(ticker)
+        df_temp = ticker_obj.history(period="60d")['Close'].reset_index()
+        
+        # Jaga-jaga kalau format yfinance berubah
+        if 'Date' not in df_temp.columns and 'Datetime' in df_temp.columns:
+            df_temp.rename(columns={'Datetime': 'Date'}, inplace=True)
             
-        df_temp.rename(columns={'Close': name}, inplace=True)
-        # Buang timezone biar bisa di-merge
-        df_temp['Date'] = pd.to_datetime(df_temp['Date']).dt.tz_localize(None) 
+        df_temp = df_temp[['Date', 'Close']].rename(columns={'Close': name})
+        
+        # Bersihkan zona waktu & bulatkan ke tengah malam (00:00:00) biar sinkron
+        df_temp['Date'] = pd.to_datetime(df_temp['Date']).dt.tz_localize(None).dt.normalize()
+        
         df_list.append(df_temp)
         
     # Gabungin semua data harga
@@ -52,13 +56,16 @@ def fetch_and_prepare_data():
         df_finance = pd.merge(df_finance, df_list[i], on='Date', how='outer')
         
     df_finance.sort_values('Date', inplace=True)
-    # --- FIX ERROR PANDAS DI SINI ---
+    
+    # --- FIX ERROR NaT DI SINI ---
+    # Tambal data kosong ke bawah (ffill), lalu tambal ke atas (bfill)
     df_finance.ffill(inplace=True)
-    df_finance.dropna(inplace=True) 
+    df_finance.bfill(inplace=True)
+    # df_finance.dropna() KITA BUANG! Biar dataframe lu gak pernah kosong lagi
     
     # B. Load Data Cuaca (Historical/Static)
     df_weather = pd.read_csv("historical_weather_data.csv")
-    df_weather['Date'] = pd.to_datetime(df_weather['Date'])
+    df_weather['Date'] = pd.to_datetime(df_weather['Date']).dt.normalize()
     
     # Hitung 30D Sum buat cuaca
     cuaca_cols = [col for col in df_weather.columns if 'Curah Hujan' in col]
@@ -68,8 +75,8 @@ def fetch_and_prepare_data():
         
     # C. Gabungkan Harga & Cuaca
     df_master = pd.merge(df_finance, df_weather, on='Date', how='left')
-    # --- FIX ERROR PANDAS DI SINI ---
-    df_master.ffill(inplace=True) 
+    df_master.ffill(inplace=True)
+    df_master.bfill(inplace=True) # Pengaman ganda
     
     # Ambil 30 baris terakhir buat ancang-ancang
     encoder_data = df_master.tail(30).copy()
@@ -77,6 +84,12 @@ def fetch_and_prepare_data():
     # D. Bikin baris masa depan 7 hari
     decoder_data = encoder_data.tail(7).copy()
     last_date = encoder_data['Date'].max()
+    
+    # --- PENGAMAN TERAKHIR ---
+    # Kalau sampai last_date masih error (misal internet down), set ke hari ini
+    if pd.isna(last_date):
+        last_date = pd.Timestamp.today().normalize()
+        
     future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=7)
     decoder_data['Date'] = future_dates
     
@@ -90,7 +103,6 @@ def fetch_and_prepare_data():
     df_final['group'] = 0 
     
     return df_final
-
 # ==========================================
 # 3. INTERFACE DASHBOARD
 # ==========================================
